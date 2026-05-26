@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placement Prep Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg2: #111111;
+  --bg3: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #f0f0f0;
+  --muted: #666;
+  --accent: #00e5a0;
+  --accent2: #7c6aff;
+  --accent3: #ff6b6b;
+  --amber: #ffb800;
+  --blue: #4da6ff;
+  --font: 'Space Grotesk', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+.header { padding: 2rem 1.5rem 1rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.logo { font-size: 18px; font-weight: 600; letter-spacing: -0.5px; }
+.logo span { color: var(--accent); }
+.deadline { font-family: var(--mono); font-size: 12px; color: var(--accent); background: rgba(0,229,160,0.08); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(0,229,160,0.2); }
+.tabs { display: flex; gap: 4px; }
+.tab { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; color: var(--muted); }
+.tab.active { background: var(--bg3); border-color: var(--border); color: var(--text); }
+.tab:hover:not(.active) { color: var(--text); }
+
+.progress-bar { height: 3px; background: var(--border); margin-top: 1rem; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.5s ease; }
+
+.content { padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 2rem; }
+.stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+.stat-num { font-size: 28px; font-weight: 600; font-family: var(--mono); }
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.phase { margin-bottom: 2rem; }
+.phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.phase-dot { width: 10px; height: 10px; border-radius: 50%; }
+.phase-title { font-size: 16px; font-weight: 600; }
+.phase-dates { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-left: auto; }
+
+.day-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; transition: border-color 0.2s; }
+.day-card.completed { border-color: rgba(0,229,160,0.3); background: rgba(0,229,160,0.03); }
+.day-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; }
+.day-check { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; cursor: pointer; }
+.day-check.checked { background: var(--accent); border-color: var(--accent); }
+.day-check.checked::after { content: '✓'; color: #000; font-size: 13px; font-weight: 600; }
+.day-info { flex: 1; }
+.day-label { font-size: 13px; font-weight: 500; }
+.day-subject { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.day-date { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.expand-btn { color: var(--muted); font-size: 18px; transition: transform 0.2s; }
+.day-card.open .expand-btn { transform: rotate(180deg); }
+
+.day-body { padding: 0 16px 14px; display: none; border-top: 1px solid var(--border); margin-top: 0; }
+.day-card.open .day-body { display: block; padding-top: 12px; }
+.task-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.task-item:last-child { border-bottom: none; }
+.task-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; cursor: pointer; transition: all 0.2s; }
+.task-check.checked { background: var(--accent2); border-color: var(--accent2); }
+.task-check.checked::after { content: '✓'; color: #fff; font-size: 10px; font-weight: 600; }
+.task-text { font-size: 13px; line-height: 1.5; }
+.task-text.done { text-decoration: line-through; color: var(--muted); }
+.tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-family: var(--mono); margin-left: 6px; }
+.tag-dsa { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+.tag-theory { background: rgba(124,106,255,0.15); color: #7c6aff; }
+.tag-practice { background: rgba(255,184,0,0.15); color: #ffb800; }
+
+.section-title { font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin: 1.5rem 0 1rem; }
+
+.apt-week { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.apt-week-header { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+.apt-week-title { font-size: 14px; font-weight: 600; }
+.apt-week-dates { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.apt-topics { padding: 0 16px 14px; }
+.apt-topic { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.apt-topic:last-child { border-bottom: none; }
+.apt-num { font-size: 11px; color: var(--muted); font-family: var(--mono); width: 20px; }
+.apt-name { font-size: 13px; flex: 1; }
+.apt-resource { font-size: 11px; color: var(--amber); }
+
+.dsa-topic { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.dsa-topic-header { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.dsa-topic-title { font-size: 14px; font-weight: 600; }
+.dsa-count { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.dsa-questions { padding: 0 16px 14px; display: none; }
+.dsa-topic.open .dsa-questions { display: block; }
+.dsa-q { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.dsa-q:last-child { border-bottom: none; }
+.dsa-q-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: all 0.2s; }
+.dsa-q-check.checked { background: var(--accent3); border-color: var(--accent3); }
+.dsa-q-check.checked::after { content: '✓'; color: #fff; font-size: 10px; font-weight: 600; }
+.dsa-q-name { font-size: 13px; flex: 1; }
+.dsa-q-name.done { text-decoration: line-through; color: var(--muted); }
+.diff { font-size: 10px; padding: 2px 7px; border-radius: 8px; font-family: var(--mono); }
+.diff-e { background: rgba(0,229,160,0.12); color: var(--accent); }
+.diff-m { background: rgba(255,184,0,0.12); color: var(--amber); }
+.diff-h { background: rgba(255,107,107,0.12); color: var(--accent3); }
+.lc-link { font-size: 11px; color: var(--blue); text-decoration: none; }
+.lc-link:hover { text-decoration: underline; }
+
+.trip-banner { background: linear-gradient(135deg, rgba(124,106,255,0.15), rgba(0,229,160,0.1)); border: 1px solid rgba(124,106,255,0.3); border-radius: 12px; padding: 16px; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; }
+.trip-icon { font-size: 24px; }
+.trip-text { font-size: 13px; }
+.trip-text strong { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">prep<span>track</span></div>
+    <div class="deadline" id="deadline-counter">Loading...</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('timetable')">Timetable</div>
+    <div class="tab" onclick="switchTab('aptitude')">Aptitude</div>
+    <div class="tab" onclick="switchTab('dsa')">DSA Questions</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="main-progress" style="width:0%"></div></div>
+</div>
+
+<div class="content">
+
+<!-- TIMETABLE TAB -->
+<div class="tab-content active" id="tab-timetable">
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-num" id="days-done" style="color:var(--accent)">0</div><div class="stat-label">Days completed</div></div>
+    <div class="stat"><div class="stat-num" id="days-left" style="color:var(--accent2)">51</div><div class="stat-label">Days remaining</div></div>
+    <div class="stat"><div class="stat-num" id="tasks-done" style="color:var(--amber)">0%</div><div class="stat-label">Tasks done</div></div>
+  </div>
+
+  <div class="trip-banner">
+    <div class="trip-icon">✈️</div>
+    <div class="trip-text"><strong>Mumbai trip: July 1–7</strong> — You've earned it. Enjoy every moment. Project starts July 8.</div>
+  </div>
+
+  <!-- Phase 1 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--accent)"></div>
+      <div class="phase-title">Phase 1 — CS Fundamentals</div>
+      <div class="phase-dates">May 26 – June 30</div>
+    </div>
+
+    <div id="timetable-days"></div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--accent2)"></div>
+      <div class="phase-title">Phase 2 — System Design</div>
+      <div class="phase-dates">June 17 – June 30</div>
+    </div>
+    <p style="font-size:13px; color:var(--muted); padding: 12px 0;">System Design runs June 17–30 alongside remaining CS topics. See days above — tagged accordingly.</p>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--amber)"></div>
+      <div class="phase-title">Phase 3 — Project Build</div>
+      <div class="phase-dates">July 8 – July 15</div>
+    </div>
+    <div id="project-days"></div>
+  </div>
+</div>
+
+<!-- APTITUDE TAB -->
+<div class="tab-content" id="tab-aptitude">
+  <div class="section-title">Daily: 30 min — 10:30 to 11:00 PM</div>
+
+  <div class="apt-week">
+    <div class="apt-week-header">
+      <div class="apt-week-title">Week 1 — Percentages + Profit & Loss</div>
+      <div class="apt-week-dates">May 26 – May 30</div>
+    </div>
+    <div class="apt-topics">
+      <div class="apt-topic"><div class="apt-num">01</div><div class="apt-name">Percentage basics — formulas, shortcuts</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">02</div><div class="apt-name">Percentage — 20 practice questions</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">03</div><div class="apt-name">Profit & Loss — formulas, CP/SP</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">04</div><div class="apt-name">Profit & Loss — 20 practice questions</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">05</div><div class="apt-name">Mixed — Percentage + P&L mock</div><div class="apt-resource">PrepInsta</div></div>
+    </div>
+  </div>
+
+  <div class="apt-week">
+    <div class="apt-week-header">
+      <div class="apt-week-title">Week 2 — Time & Work + Speed & Distance</div>
+      <div class="apt-week-dates">May 31 – June 4</div>
+    </div>
+    <div class="apt-topics">
+      <div class="apt-topic"><div class="apt-num">01</div><div class="apt-name">Time & Work — pipes, cisterns, shortcuts</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">02</div><div class="apt-name">Time & Work — 20 practice questions</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">03</div><div class="apt-name">Speed, Distance & Time — basics</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">04</div><div class="apt-name">Trains, Boats & Streams</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">05</div><div class="apt-name">Mixed mock — TDW + SDT</div><div class="apt-resource">PrepInsta</div></div>
+    </div>
+  </div>
+
+  <div class="apt-week">
+    <div class="apt-week-header">
+      <div class="apt-week-title">Week 3 — Number Series + Reasoning</div>
+      <div class="apt-week-dates">June 5 – June 11</div>
+    </div>
+    <div class="apt-topics">
+      <div class="apt-topic"><div class="apt-num">01</div><div class="apt-name">Number Series — patterns, missing numbers</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">02</div><div class="apt-name">Number Series — 25 practice questions</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">03</div><div class="apt-name">Logical Reasoning — seating arrangement</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">04</div><div class="apt-name">Logical Reasoning — blood relations, direction</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">05</div><div class="apt-name">Logical Reasoning — syllogisms, coding-decoding</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">06</div><div class="apt-name">Mixed reasoning mock</div><div class="apt-resource">PrepInsta</div></div>
+      <div class="apt-topic"><div class="apt-num">07</div><div class="apt-name">Full aptitude mock test 1</div><div class="apt-resource">PrepInsta TCS NQT</div></div>
+    </div>
+  </div>
+
+  <div class="apt-week">
+    <div class="apt-week-header">
+      <div class="apt-week-title">Week 4–5 — TCS NQT Mock Practice</div>
+      <div class="apt-week-dates">June 12 – June 30</div>
+    </div>
+    <div class="apt-topics">
+      <div class="apt-topic"><div class="apt-num">01</div><div class="apt-name">TCS NQT previous year paper 1</div><div class="apt-resource">PrepInsta</div></div>
+      <div class="apt-topic"><div class="apt-num">02</div><div class="apt-name">TCS NQT previous year paper 2</div><div class="apt-resource">PrepInsta</div></div>
+      <div class="apt-topic"><div class="apt-num">03</div><div class="apt-name">TCS NQT previous year paper 3</div><div class="apt-resource">PrepInsta</div></div>
+      <div class="apt-topic"><div class="apt-num">04</div><div class="apt-name">Verbal ability — reading comprehension</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">05</div><div class="apt-name">Verbal ability — grammar + vocabulary</div><div class="apt-resource">IndiaBix</div></div>
+      <div class="apt-topic"><div class="apt-num">06</div><div class="apt-name">Full mock test 2 + analysis</div><div class="apt-resource">PrepInsta TCS NQT</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- DSA TAB -->
+<div class="tab-content" id="tab-dsa">
+  <div class="section-title">Topic-wise questions — Love Babbar + LeetCode</div>
+  <div id="dsa-container"></div>
+</div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'preptrack_v2';
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const timetableData = [
+  { date: 'May 26', label: 'Day 1', subject: 'OOPs — revision', phase: 1, tasks: [
+    { id: 't1', text: 'Revise Corey Schafer OOPs notes', tag: 'theory' },
+    { id: 't2', text: 'Love Babbar DSA lecture 42', tag: 'dsa' },
+    { id: 't3', text: 'LeetCode — 2 array problems', tag: 'practice' },
+    { id: 't4', text: 'Aptitude — Percentage basics (IndiaBix)', tag: 'practice' }
+  ]},
+  { date: 'May 27', label: 'Day 2', subject: 'OS — Introduction', phase: 1, tasks: [
+    { id: 't5', text: 'Abhishek Sharma OS — videos 1 & 2 (Intro + Process)', tag: 'theory' },
+    { id: 't6', text: 'NoteGPT — save OS notes', tag: 'theory' },
+    { id: 't7', text: 'Love Babbar DSA lecture 43', tag: 'dsa' },
+    { id: 't8', text: 'Aptitude — Percentage 20 questions', tag: 'practice' }
+  ]},
+  { date: 'May 28', label: 'Day 3', subject: 'OS — Processes & Threads', phase: 1, tasks: [
+    { id: 't9', text: 'OS — Threads, Process States, Context Switching', tag: 'theory' },
+    { id: 't10', text: 'Love Babbar DSA lecture 44', tag: 'dsa' },
+    { id: 't11', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't12', text: 'Aptitude — Profit & Loss basics', tag: 'practice' }
+  ]},
+  { date: 'May 29', label: 'Day 4', subject: 'OS — CPU Scheduling', phase: 1, tasks: [
+    { id: 't13', text: 'OS — FCFS, SJF, Round Robin, Priority scheduling', tag: 'theory' },
+    { id: 't14', text: 'Love Babbar DSA lecture 45', tag: 'dsa' },
+    { id: 't15', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't16', text: 'Aptitude — P&L 20 questions', tag: 'practice' }
+  ]},
+  { date: 'May 30', label: 'Day 5', subject: 'OS — Deadlock', phase: 1, tasks: [
+    { id: 't17', text: 'OS — Deadlock conditions, prevention, Banker\'s algo', tag: 'theory' },
+    { id: 't18', text: 'Love Babbar DSA lecture 46', tag: 'dsa' },
+    { id: 't19', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't20', text: 'Aptitude — Mixed P&L + Percentage mock', tag: 'practice' }
+  ]},
+  { date: 'May 31', label: 'Day 6', subject: 'OS — Memory Management', phase: 1, tasks: [
+    { id: 't21', text: 'OS — Paging, Segmentation, Virtual Memory', tag: 'theory' },
+    { id: 't22', text: 'Love Babbar DSA lecture 47', tag: 'dsa' },
+    { id: 't23', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't24', text: 'Aptitude — Time & Work basics', tag: 'practice' }
+  ]},
+  { date: 'Jun 1', label: 'Day 7', subject: 'OS — Synchronization', phase: 1, tasks: [
+    { id: 't25', text: 'OS — Mutex, Semaphore, Monitors, Critical Section', tag: 'theory' },
+    { id: 't26', text: 'Love Babbar DSA lecture 48', tag: 'dsa' },
+    { id: 't27', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't28', text: 'Aptitude — Time & Work 20 questions', tag: 'practice' }
+  ]},
+  { date: 'Jun 2', label: 'Day 8', subject: 'OS — Revision + File Systems', phase: 1, tasks: [
+    { id: 't29', text: 'OS — File Systems, Thrashing, quick revision all OS', tag: 'theory' },
+    { id: 't30', text: 'Love Babbar DSA lecture 49', tag: 'dsa' },
+    { id: 't31', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't32', text: 'Aptitude — Speed & Distance basics', tag: 'practice' }
+  ]},
+  { date: 'Jun 3', label: 'Day 9', subject: 'DBMS — ER Model + Keys', phase: 1, tasks: [
+    { id: 't33', text: 'Sanchit Jain DBMS — ER Model, Relational Model, Keys', tag: 'theory' },
+    { id: 't34', text: 'Love Babbar DSA lecture 50', tag: 'dsa' },
+    { id: 't35', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't36', text: 'Aptitude — Trains, Boats & Streams', tag: 'practice' }
+  ]},
+  { date: 'Jun 4', label: 'Day 10', subject: 'DBMS — Normalization', phase: 1, tasks: [
+    { id: 't37', text: 'DBMS — 1NF, 2NF, 3NF, BCNF with examples', tag: 'theory' },
+    { id: 't38', text: 'Love Babbar DSA lecture 51', tag: 'dsa' },
+    { id: 't39', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't40', text: 'Aptitude — Mixed SDT mock', tag: 'practice' }
+  ]},
+  { date: 'Jun 5', label: 'Day 11', subject: 'DBMS — Transactions + ACID', phase: 1, tasks: [
+    { id: 't41', text: 'DBMS — Transactions, ACID properties, Isolation levels', tag: 'theory' },
+    { id: 't42', text: 'Love Babbar DSA lecture 52', tag: 'dsa' },
+    { id: 't43', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't44', text: 'Aptitude — Number Series patterns', tag: 'practice' }
+  ]},
+  { date: 'Jun 6', label: 'Day 12', subject: 'DBMS — Indexing + B+ Trees', phase: 1, tasks: [
+    { id: 't45', text: 'DBMS — Indexing, B+ Trees, Clustered vs Non-clustered', tag: 'theory' },
+    { id: 't46', text: 'Love Babbar DSA lecture 53', tag: 'dsa' },
+    { id: 't47', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't48', text: 'Aptitude — Number Series 25 questions', tag: 'practice' }
+  ]},
+  { date: 'Jun 7', label: 'Day 13', subject: 'DBMS — Joins + Concurrency', phase: 1, tasks: [
+    { id: 't49', text: 'DBMS — Joins, Concurrency Control, Locking', tag: 'theory' },
+    { id: 't50', text: 'Love Babbar DSA lecture 54', tag: 'dsa' },
+    { id: 't51', text: 'LeetCode SQL — 5 questions', tag: 'practice' },
+    { id: 't52', text: 'Aptitude — Logical Reasoning seating arrangement', tag: 'practice' }
+  ]},
+  { date: 'Jun 8', label: 'Day 14', subject: 'DBMS — Revision', phase: 1, tasks: [
+    { id: 't53', text: 'DBMS full revision — notes + InterviewBit DBMS MCQs', tag: 'theory' },
+    { id: 't54', text: 'Love Babbar DSA lecture 55', tag: 'dsa' },
+    { id: 't55', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't56', text: 'Aptitude — Blood relations + Direction', tag: 'practice' }
+  ]},
+  { date: 'Jun 9', label: 'Day 15', subject: 'SQL — Ankit Bansal one shot', phase: 1, tasks: [
+    { id: 't57', text: 'Ankit Bansal SQL — Part 1 (DDL, DML, Joins) code along', tag: 'theory' },
+    { id: 't58', text: 'Love Babbar DSA lecture 56', tag: 'dsa' },
+    { id: 't59', text: 'LeetCode SQL — 10 questions', tag: 'practice' },
+    { id: 't60', text: 'Aptitude — Syllogisms + Coding-Decoding', tag: 'practice' }
+  ]},
+  { date: 'Jun 10', label: 'Day 16', subject: 'SQL — Advanced', phase: 1, tasks: [
+    { id: 't61', text: 'SQL — Subqueries, Window functions, Aggregate functions', tag: 'theory' },
+    { id: 't62', text: 'Love Babbar DSA lecture 57', tag: 'dsa' },
+    { id: 't63', text: 'LeetCode SQL — 10 questions', tag: 'practice' },
+    { id: 't64', text: 'Aptitude — Mixed reasoning mock', tag: 'practice' }
+  ]},
+  { date: 'Jun 11', label: 'Day 17', subject: 'SQL — Practice + Revision', phase: 1, tasks: [
+    { id: 't65', text: 'LeetCode SQL 50 — complete remaining questions', tag: 'practice' },
+    { id: 't66', text: 'Love Babbar DSA lecture 58', tag: 'dsa' },
+    { id: 't67', text: 'SQL revision — all query types', tag: 'theory' },
+    { id: 't68', text: 'Aptitude — Full mock test 1 (PrepInsta TCS NQT)', tag: 'practice' }
+  ]},
+  { date: 'Jun 12', label: 'Day 18', subject: 'CN — OSI + TCP/IP', phase: 1, tasks: [
+    { id: 't69', text: 'Shrayansh Jain CN — OSI Model all 7 layers', tag: 'theory' },
+    { id: 't70', text: 'CN — TCP/IP Model, comparison with OSI', tag: 'theory' },
+    { id: 't71', text: 'Love Babbar DSA lecture 59', tag: 'dsa' },
+    { id: 't72', text: 'Aptitude — TCS NQT previous year paper 1', tag: 'practice' }
+  ]},
+  { date: 'Jun 13', label: 'Day 19', subject: 'CN — TCP, UDP, HTTP', phase: 1, tasks: [
+    { id: 't73', text: 'CN — TCP vs UDP, 3-way handshake, HTTP/HTTPS', tag: 'theory' },
+    { id: 't74', text: 'CN — DNS, IP, Subnetting basics', tag: 'theory' },
+    { id: 't75', text: 'Love Babbar DSA lecture 60', tag: 'dsa' },
+    { id: 't76', text: 'Aptitude — TCS NQT previous year paper 2', tag: 'practice' }
+  ]},
+  { date: 'Jun 14', label: 'Day 20', subject: 'CN — Routing + Revision', phase: 1, tasks: [
+    { id: 't77', text: 'CN — Routing protocols, ARP, DHCP, congestion control', tag: 'theory' },
+    { id: 't78', text: 'CN full revision — InterviewBit CN notes', tag: 'theory' },
+    { id: 't79', text: 'Love Babbar DSA lecture 61', tag: 'dsa' },
+    { id: 't80', text: 'Aptitude — Verbal ability reading comprehension', tag: 'practice' }
+  ]},
+  { date: 'Jun 15', label: 'Day 21', subject: 'CS Fundamentals — Full Revision', phase: 1, tasks: [
+    { id: 't81', text: 'Quick revision — OS (processes, deadlock, memory)', tag: 'theory' },
+    { id: 't82', text: 'Quick revision — DBMS (normalization, ACID, indexing)', tag: 'theory' },
+    { id: 't83', text: 'Quick revision — CN + OOPs', tag: 'theory' },
+    { id: 't84', text: 'Love Babbar DSA lecture 62', tag: 'dsa' }
+  ]},
+  { date: 'Jun 16', label: 'Day 22', subject: 'CS Revision + SD Intro', phase: 1, tasks: [
+    { id: 't85', text: 'Gaurav Sen — System Design intro video', tag: 'theory' },
+    { id: 't86', text: 'SD — Scalability, vertical vs horizontal scaling', tag: 'theory' },
+    { id: 't87', text: 'Love Babbar DSA lecture 63', tag: 'dsa' },
+    { id: 't88', text: 'Aptitude — TCS NQT paper 3', tag: 'practice' }
+  ]},
+  { date: 'Jun 17', label: 'Day 23', subject: 'System Design — Load Balancing', phase: 1, tasks: [
+    { id: 't89', text: 'SD — Load balancing, consistent hashing, round robin', tag: 'theory' },
+    { id: 't90', text: 'ByteByteGo — Load balancer video', tag: 'theory' },
+    { id: 't91', text: 'Love Babbar DSA lecture 64', tag: 'dsa' },
+    { id: 't92', text: 'Aptitude — Verbal ability grammar', tag: 'practice' }
+  ]},
+  { date: 'Jun 18', label: 'Day 24', subject: 'System Design — Caching', phase: 1, tasks: [
+    { id: 't93', text: 'SD — Redis, CDN, cache invalidation strategies', tag: 'theory' },
+    { id: 't94', text: 'Love Babbar DSA lecture 65', tag: 'dsa' },
+    { id: 't95', text: 'LeetCode — 2 problems', tag: 'practice' },
+    { id: 't96', text: 'Aptitude — Full mock test 2', tag: 'practice' }
+  ]},
+  { date: 'Jun 19', label: 'Day 25', subject: 'System Design — Databases', phase: 1, tasks: [
+    { id: 't97', text: 'SD — SQL vs NoSQL, CAP theorem, sharding', tag: 'theory' },
+    { id: 't98', text: 'Love Babbar DSA lecture 66', tag: 'dsa' },
+    { id: 't99', text: 'LeetCode — 2 problems', tag: 'practice' }
+  ]},
+  { date: 'Jun 20', label: 'Day 26', subject: 'System Design — APIs + Queues', phase: 1, tasks: [
+    { id: 't100', text: 'SD — REST vs GraphQL, rate limiting, JWT/OAuth', tag: 'theory' },
+    { id: 't101', text: 'SD — Message queues, Kafka basics', tag: 'theory' },
+    { id: 't102', text: 'Love Babbar DSA lecture 67', tag: 'dsa' },
+    { id: 't103', text: 'LeetCode — 2 problems', tag: 'practice' }
+  ]},
+  { date: 'Jun 21', label: 'Day 27', subject: 'SD Practice — URL Shortener', phase: 1, tasks: [
+    { id: 't104', text: 'Design URL shortener — draw diagram, explain components', tag: 'theory' },
+    { id: 't105', text: 'Love Babbar DSA lecture 68', tag: 'dsa' },
+    { id: 't106', text: 'LeetCode — 2 problems', tag: 'practice' }
+  ]},
+  { date: 'Jun 22', label: 'Day 28', subject: 'SD Practice — Twitter + WhatsApp', phase: 1, tasks: [
+    { id: 't107', text: 'Design Twitter feed — fanout, storage, timelines', tag: 'theory' },
+    { id: 't108', text: 'Design WhatsApp — real-time messaging, delivery', tag: 'theory' },
+    { id: 't109', text: 'Love Babbar DSA lecture 69', tag: 'dsa' },
+    { id: 't110', text: 'LeetCode — 2 problems', tag: 'practice' }
+  ]},
+  { date: 'Jun 23-30', label: 'Days 29–36', subject: 'SD Practice + DSA + Revision', phase: 1, tasks: [
+    { id: 't111', text: 'Design Netflix / YouTube / Uber', tag: 'theory' },
+    { id: 't112', text: 'Love Babbar DSA lectures 70–77', tag: 'dsa' },
+    { id: 't113', text: 'LeetCode — 2 problems daily', tag: 'practice' },
+    { id: 't114', text: 'Complete CS fundamentals revision', tag: 'theory' }
+  ]}
+];
+
+const projectData = [
+  { date: 'Jul 8', label: 'Day 1', subject: 'Project — Setup', tasks: [
+    { id: 'p1', text: 'Setup FastAPI project structure + SQLite connection', tag: 'theory' },
+    { id: 'p2', text: 'Install dependencies — FastAPI, SQLAlchemy, APScheduler', tag: 'practice' }
+  ]},
+  { date: 'Jul 9', label: 'Day 2', subject: 'Project — Auth', tasks: [
+    { id: 'p3', text: 'User model + JWT login/signup endpoints', tag: 'theory' },
+    { id: 'p4', text: 'Test auth with Postman/Thunder Client', tag: 'practice' }
+  ]},
+  { date: 'Jul 10', label: 'Day 3', subject: 'Project — CRUD API', tasks: [
+    { id: 'p5', text: 'Task model + all CRUD endpoints', tag: 'theory' },
+    { id: 'p6', text: 'Test all endpoints', tag: 'practice' }
+  ]},
+  { date: 'Jul 11', label: 'Day 4', subject: 'Project — Frontend', tasks: [
+    { id: 'p7', text: 'Jinja2 templates — dashboard UI', tag: 'theory' },
+    { id: 'p8', text: 'Forms connected to backend', tag: 'practice' }
+  ]},
+  { date: 'Jul 12', label: 'Day 5', subject: 'Project — AI Integration', tasks: [
+    { id: 'p9', text: 'Groq API + LangChain setup — task suggestion feature', tag: 'theory' },
+    { id: 'p10', text: 'AI priority scoring — auto sort tasks', tag: 'practice' }
+  ]},
+  { date: 'Jul 13', label: 'Day 6', subject: 'Project — Spaced Repetition', tasks: [
+    { id: 'p11', text: 'APScheduler — 1-4-7 spaced repetition reminders', tag: 'theory' },
+    { id: 'p12', text: 'Test automation feature end to end', tag: 'practice' }
+  ]},
+  { date: 'Jul 14', label: 'Day 7', subject: 'Project — Polish + Deploy', tasks: [
+    { id: 'p13', text: 'Bug fixes + UI cleanup', tag: 'practice' },
+    { id: 'p14', text: 'Deploy on Render — get live link', tag: 'practice' },
+    { id: 'p15', text: 'Write README + record 2 min demo', tag: 'practice' }
+  ]},
+  { date: 'Jul 15', label: 'Day 8', subject: 'Final Revision', tasks: [
+    { id: 'p16', text: 'Revise all CS fundamentals quick', tag: 'theory' },
+    { id: 'p17', text: 'Practice explaining project out loud', tag: 'practice' },
+    { id: 'p18', text: 'Mock interview — HR + technical questions', tag: 'practice' }
+  ]}
+];
+
+const dsaData = [
+  { topic: 'Arrays', tasks: [
+    { id: 'd1', name: 'Two Sum', diff: 'E', lc: 'https://leetcode.com/problems/two-sum/' },
+    { id: 'd2', name: 'Best Time to Buy and Sell Stock', diff: 'E', lc: 'https://leetcode.com/problems/best-time-to-buy-and-sell-stock/' },
+    { id: 'd3', name: 'Contains Duplicate', diff: 'E', lc: 'https://leetcode.com/problems/contains-duplicate/' },
+    { id: 'd4', name: 'Maximum Subarray (Kadane\'s)', diff: 'M', lc: 'https://leetcode.com/problems/maximum-subarray/' },
+    { id: 'd5', name: 'Product of Array Except Self', diff: 'M', lc: 'https://leetcode.com/problems/product-of-array-except-self/' },
+    { id: 'd6', name: 'Sort Colors (Dutch Flag)', diff: 'M', lc: 'https://leetcode.com/problems/sort-colors/' },
+    { id: 'd7', name: 'Merge Intervals', diff: 'M', lc: 'https://leetcode.com/problems/merge-intervals/' },
+    { id: 'd8', name: 'Find Minimum in Rotated Sorted Array', diff: 'M', lc: 'https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/' }
+  ]},
+  { topic: 'Strings', tasks: [
+    { id: 'd9', name: 'Valid Anagram', diff: 'E', lc: 'https://leetcode.com/problems/valid-anagram/' },
+    { id: 'd10', name: 'Valid Palindrome', diff: 'E', lc: 'https://leetcode.com/problems/valid-palindrome/' },
+    { id: 'd11', name: 'Longest Common Prefix', diff: 'E', lc: 'https://leetcode.com/problems/longest-common-prefix/' },
+    { id: 'd12', name: 'Longest Substring Without Repeating', diff: 'M', lc: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/' },
+    { id: 'd13', name: 'Group Anagrams', diff: 'M', lc: 'https://leetcode.com/problems/group-anagrams/' },
+    { id: 'd14', name: 'Count and Say', diff: 'M', lc: 'https://leetcode.com/problems/count-and-say/' }
+  ]},
+  { topic: 'Linked List', tasks: [
+    { id: 'd15', name: 'Reverse Linked List', diff: 'E', lc: 'https://leetcode.com/problems/reverse-linked-list/' },
+    { id: 'd16', name: 'Merge Two Sorted Lists', diff: 'E', lc: 'https://leetcode.com/problems/merge-two-sorted-lists/' },
+    { id: 'd17', name: 'Linked List Cycle', diff: 'E', lc: 'https://leetcode.com/problems/linked-list-cycle/' },
+    { id: 'd18', name: 'Remove Nth Node from End', diff: 'M', lc: 'https://leetcode.com/problems/remove-nth-node-from-end-of-list/' },
+    { id: 'd19', name: 'Add Two Numbers', diff: 'M', lc: 'https://leetcode.com/problems/add-two-numbers/' },
+    { id: 'd20', name: 'Find Middle of Linked List', diff: 'E', lc: 'https://leetcode.com/problems/middle-of-the-linked-list/' }
+  ]},
+  { topic: 'Stack & Queue', tasks: [
+    { id: 'd21', name: 'Valid Parentheses', diff: 'E', lc: 'https://leetcode.com/problems/valid-parentheses/' },
+    { id: 'd22', name: 'Min Stack', diff: 'M', lc: 'https://leetcode.com/problems/min-stack/' },
+    { id: 'd23', name: 'Next Greater Element I', diff: 'E', lc: 'https://leetcode.com/problems/next-greater-element-i/' },
+    { id: 'd24', name: 'Daily Temperatures', diff: 'M', lc: 'https://leetcode.com/problems/daily-temperatures/' },
+    { id: 'd25', name: 'Implement Queue using Stacks', diff: 'E', lc: 'https://leetcode.com/problems/implement-queue-using-stacks/' }
+  ]},
+  { topic: 'Recursion & Sorting', tasks: [
+    { id: 'd26', name: 'Sort an Array (Merge Sort)', diff: 'M', lc: 'https://leetcode.com/problems/sort-an-array/' },
+    { id: 'd27', name: 'Kth Largest Element (Quick Select)', diff: 'M', lc: 'https://leetcode.com/problems/kth-largest-element-in-an-array/' },
+    { id: 'd28', name: 'Count Inversions', diff: 'M', lc: 'https://practice.geeksforgeeks.org/problems/inversion-of-array/0' },
+    { id: 'd29', name: 'Subsets', diff: 'M', lc: 'https://leetcode.com/problems/subsets/' },
+    { id: 'd30', name: 'Permutations', diff: 'M', lc: 'https://leetcode.com/problems/permutations/' }
+  ]},
+  { topic: 'Binary Search', tasks: [
+    { id: 'd31', name: 'Binary Search', diff: 'E', lc: 'https://leetcode.com/problems/binary-search/' },
+    { id: 'd32', name: 'Search in Rotated Sorted Array', diff: 'M', lc: 'https://leetcode.com/problems/search-in-rotated-sorted-array/' },
+    { id: 'd33', name: 'Find Peak Element', diff: 'M', lc: 'https://leetcode.com/problems/find-peak-element/' },
+    { id: 'd34', name: 'Koko Eating Bananas', diff: 'M', lc: 'https://leetcode.com/problems/koko-eating-bananas/' },
+    { id: 'd35', name: 'Median of Two Sorted Arrays', diff: 'H', lc: 'https://leetcode.com/problems/median-of-two-sorted-arrays/' }
+  ]},
+  { topic: 'Hashing', tasks: [
+    { id: 'd36', name: 'Two Sum (HashMap)', diff: 'E', lc: 'https://leetcode.com/problems/two-sum/' },
+    { id: 'd37', name: 'Longest Consecutive Sequence', diff: 'M', lc: 'https://leetcode.com/problems/longest-consecutive-sequence/' },
+    { id: 'd38', name: 'Subarray Sum Equals K', diff: 'M', lc: 'https://leetcode.com/problems/subarray-sum-equals-k/' },
+    { id: 'd39', name: 'Top K Frequent Elements', diff: 'M', lc: 'https://leetcode.com/problems/top-k-frequent-elements/' }
+  ]},
+  { topic: 'Trees', tasks: [
+    { id: 'd40', name: 'Inorder Traversal', diff: 'E', lc: 'https://leetcode.com/problems/binary-tree-inorder-traversal/' },
+    { id: 'd41', name: 'Maximum Depth of Binary Tree', diff: 'E', lc: 'https://leetcode.com/problems/maximum-depth-of-binary-tree/' },
+    { id: 'd42', name: 'Symmetric Tree', diff: 'E', lc: 'https://leetcode.com/problems/symmetric-tree/' },
+    { id: 'd43', name: 'Level Order Traversal', diff: 'M', lc: 'https://leetcode.com/problems/binary-tree-level-order-traversal/' },
+    { id: 'd44', name: 'Lowest Common Ancestor', diff: 'M', lc: 'https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/' },
+    { id: 'd45', name: 'Validate BST', diff: 'M', lc: 'https://leetcode.com/problems/validate-binary-search-tree/' },
+    { id: 'd46', name: 'Height Balanced Binary Tree', diff: 'E', lc: 'https://leetcode.com/problems/balanced-binary-tree/' },
+    { id: 'd47', name: 'Diameter of Binary Tree', diff: 'E', lc: 'https://leetcode.com/problems/diameter-of-binary-tree/' }
+  ]},
+  { topic: 'Graphs', tasks: [
+    { id: 'd48', name: 'Number of Islands (BFS/DFS)', diff: 'M', lc: 'https://leetcode.com/problems/number-of-islands/' },
+    { id: 'd49', name: 'Clone Graph', diff: 'M', lc: 'https://leetcode.com/problems/clone-graph/' },
+    { id: 'd50', name: 'Course Schedule (Cycle Detection)', diff: 'M', lc: 'https://leetcode.com/problems/course-schedule/' },
+    { id: 'd51', name: 'Flood Fill', diff: 'E', lc: 'https://leetcode.com/problems/flood-fill/' },
+    { id: 'd52', name: 'Rotting Oranges', diff: 'M', lc: 'https://leetcode.com/problems/rotting-oranges/' },
+    { id: 'd53', name: 'Word Ladder', diff: 'H', lc: 'https://leetcode.com/problems/word-ladder/' }
+  ]},
+  { topic: 'Dynamic Programming', tasks: [
+    { id: 'd54', name: 'Climbing Stairs', diff: 'E', lc: 'https://leetcode.com/problems/climbing-stairs/' },
+    { id: 'd55', name: 'House Robber', diff: 'M', lc: 'https://leetcode.com/problems/house-robber/' },
+    { id: 'd56', name: 'Coin Change', diff: 'M', lc: 'https://leetcode.com/problems/coin-change/' },
+    { id: 'd57', name: 'Longest Increasing Subsequence', diff: 'M', lc: 'https://leetcode.com/problems/longest-increasing-subsequence/' },
+    { id: 'd58', name: '0/1 Knapsack', diff: 'M', lc: 'https://practice.geeksforgeeks.org/problems/0-1-knapsack-problem/0' },
+    { id: 'd59', name: 'Unique Paths', diff: 'M', lc: 'https://leetcode.com/problems/unique-paths/' },
+    { id: 'd60', name: 'Longest Common Subsequence', diff: 'M', lc: 'https://leetcode.com/problems/longest-common-subsequence/' }
+  ]}
+];
+
+function renderTimetable() {
+  const container = document.getElementById('timetable-days');
+  container.innerHTML = timetableData.map(day => {
+    const allChecked = day.tasks.every(t => state[t.id]);
+    const anyChecked = day.tasks.some(t => state[t.id]);
+    return `
+    <div class="day-card ${allChecked ? 'completed' : ''}" id="card-${day.date.replace(' ','-')}">
+      <div class="day-header" onclick="toggleDay('${day.date.replace(' ','-')}')">
+        <div class="day-check ${allChecked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleDay('${day.date.replace(' ','-')}'); checkAllTasks('${day.tasks.map(t=>t.id).join(',')}')"></div>
+        <div class="day-info">
+          <div class="day-label">${day.label} — ${day.subject}</div>
+          <div class="day-subject">${day.tasks.filter(t=>state[t.id]).length}/${day.tasks.length} tasks done</div>
+        </div>
+        <div class="day-date">${day.date}</div>
+        <div class="expand-btn">⌄</div>
+      </div>
+      <div class="day-body">
+        ${day.tasks.map(t => `
+          <div class="task-item">
+            <div class="task-check ${state[t.id] ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+            <div class="task-text ${state[t.id] ? 'done' : ''}">${t.text}<span class="tag tag-${t.tag}">${t.tag}</span></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProjectDays() {
+  const container = document.getElementById('project-days');
+  container.innerHTML = projectData.map(day => {
+    const allChecked = day.tasks.every(t => state[t.id]);
+    return `
+    <div class="day-card ${allChecked ? 'completed' : ''}" id="card-proj-${day.date.replace(' ','-')}">
+      <div class="day-header" onclick="toggleDay('proj-${day.date.replace(' ','-')}')">
+        <div class="day-check ${allChecked ? 'checked' : ''}"></div>
+        <div class="day-info">
+          <div class="day-label">${day.label} — ${day.subject}</div>
+          <div class="day-subject">${day.tasks.filter(t=>state[t.id]).length}/${day.tasks.length} tasks done</div>
+        </div>
+        <div class="day-date">${day.date}</div>
+        <div class="expand-btn">⌄</div>
+      </div>
+      <div class="day-body">
+        ${day.tasks.map(t => `
+          <div class="task-item">
+            <div class="task-check ${state[t.id] ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+            <div class="task-text ${state[t.id] ? 'done' : ''}">${t.text}<span class="tag tag-${t.tag}">${t.tag}</span></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDSA() {
+  const container = document.getElementById('dsa-container');
+  container.innerHTML = dsaData.map(topic => {
+    const done = topic.tasks.filter(t => state[t.id]).length;
+    return `
+    <div class="dsa-topic" id="dsa-${topic.topic}">
+      <div class="dsa-topic-header" onclick="toggleDSA('${topic.topic}')">
+        <div class="dsa-topic-title">${topic.topic}</div>
+        <div class="dsa-count">${done}/${topic.tasks.length} done ⌄</div>
+      </div>
+      <div class="dsa-questions">
+        ${topic.tasks.map(t => `
+          <div class="dsa-q">
+            <div class="dsa-q-check ${state[t.id] ? 'checked' : ''}" onclick="toggleTask('${t.id}')"></div>
+            <div class="dsa-q-name ${state[t.id] ? 'done' : ''}">${t.name}</div>
+            <span class="diff diff-${t.diff.toLowerCase()}">${t.diff}</span>
+            <a class="lc-link" href="${t.lc}" target="_blank">↗</a>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDay(id) {
+  const card = document.getElementById('card-' + id);
+  if (card) card.classList.toggle('open');
+}
+
+function toggleDSA(topic) {
+  const el = document.getElementById('dsa-' + topic);
+  if (el) el.classList.toggle('open');
+}
+
+function toggleTask(id) {
+  state[id] = !state[id];
+  save();
+  renderAll();
+  updateStats();
+}
+
+function checkAllTasks(ids) {
+  const idArr = ids.split(',');
+  const allDone = idArr.every(id => state[id]);
+  idArr.forEach(id => state[id] = !allDone);
+  save();
+  renderAll();
+  updateStats();
+}
+
+function updateStats() {
+  const allTasks = [...timetableData.flatMap(d=>d.tasks), ...projectData.flatMap(d=>d.tasks), ...dsaData.flatMap(t=>t.tasks)];
+  const done = allTasks.filter(t => state[t.id]).length;
+  const pct = Math.round((done / allTasks.length) * 100);
+
+  const daysDone = timetableData.filter(d => d.tasks.every(t => state[t.id])).length;
+  document.getElementById('days-done').textContent = daysDone;
+  document.getElementById('tasks-done').textContent = pct + '%';
+  document.getElementById('main-progress').style.width = pct + '%';
+
+  const deadline = new Date('2025-07-15');
+  const today = new Date();
+  const diff = Math.ceil((deadline - today) / (1000*60*60*24));
+  document.getElementById('days-left').textContent = Math.max(0, diff);
+  document.getElementById('deadline-counter').textContent = Math.max(0, diff) + ' days left';
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['timetable','aptitude','dsa'][i] === name));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function renderAll() {
+  renderTimetable();
+  renderProjectDays();
+  renderDSA();
+}
+
+renderAll();
+updateStats();
+</script>
+</body>
+</html>
